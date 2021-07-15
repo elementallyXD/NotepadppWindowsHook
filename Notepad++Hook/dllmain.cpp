@@ -42,7 +42,7 @@ LRESULT CALLBACK KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
 
 EXTERN_DLL_EXPORT BOOL CALLBACK SetKeyboardHook(DWORD thread)
 {    
-    if (!hKeyboardHook && hInstance && (thread > 0))
+    if (!hKeyboardHook && hInstance && (thread >= 0))
         hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)KeyboardProc, hInstance, thread);
     return hKeyboardHook ? TRUE : FALSE;
 }

@@ -8,9 +8,8 @@ public:
 	KeyboardHook(const std::wstring& dllPath, const DWORD& NotepadProccessID);
 	~KeyboardHook() noexcept;
 
-	VOID Unhook();
-
 private:
+	VOID Unhook();
 	BOOL LoadDll();
 	BOOL SetHook();
 
@@ -22,7 +21,7 @@ private:
 	SetKeyboardHook installHook = NULL;
 	UnhookKeyboardHook uninstallHook = NULL;
 
-	std::wstring m_dll;
+	std::wstring m_dll = L"\0";
 	DWORD m_id = 0;
 };
 
