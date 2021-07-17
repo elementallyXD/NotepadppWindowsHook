@@ -19,7 +19,7 @@ KeyboardHook::KeyboardHook(const std::wstring& dllPath, const DWORD& NotepadProc
 		}
 		else
 		{
-			std::wcout << "Successfully loaded library \"" << m_dll << "\" and set hook for " << m_id << std::endl;
+			std::wcout << "Successfully loaded library \"" << m_dll << "\" and set the hook for " << m_id << std::endl;
 		}
 	}
 }
