@@ -4,7 +4,8 @@
 #include <tlhelp32.h>
 #include <stdexcept>
 
-HWND g_HWND = NULL;
+// HWND to window that we search
+HWND g_processTools_HWND = NULL;
 
 DWORD GetPIDByName(const std::wstring& name)
 {
@@ -37,7 +38,7 @@ BOOL CALLBACK EnumWindowsProcMy(HWND hwnd, LPARAM lParam)
 	GetWindowThreadProcessId(hwnd, &lpdwProcessId);
 	if (lpdwProcessId == lParam)
 	{
-		g_HWND = hwnd;
+		g_processTools_HWND = hwnd;
 		return FALSE;
 	}
 	return TRUE;
@@ -46,6 +47,7 @@ BOOL CALLBACK EnumWindowsProcMy(HWND hwnd, LPARAM lParam)
 VOID ProcessSearch(const std::wstring& process, DWORD* threadID)
 {
 	DWORD pid = GetPIDByName(process);
+	DWORD id = 0;
 	if (pid <= 0)
 	{
 		throw std::runtime_error("The process is not found!");
@@ -54,9 +56,17 @@ VOID ProcessSearch(const std::wstring& process, DWORD* threadID)
 	{
 		// geting HWND to process
 		EnumWindows(EnumWindowsProcMy, pid);
-		if (g_HWND)
+		if (g_processTools_HWND)
 		{
-			*threadID = GetWindowThreadProcessId(g_HWND, &pid);
+			id = GetWindowThreadProcessId(g_processTools_HWND, &pid);
+			if (id <= 0)
+			{
+				throw std::runtime_error("Thread id not found!");
+			}
+			else
+			{
+				*threadID = id;
+			}
 		}
 		else
 		{

@@ -15,7 +15,7 @@ private:
 
 	HINSTANCE m_hHookDLL = NULL;
 
-	typedef BOOL(CALLBACK* SetKeyboardHook)(DWORD thread);
+	typedef BOOL(CALLBACK* SetKeyboardHook)(const DWORD& thread);
 	typedef VOID(CALLBACK* UnhookKeyboardHook)();
 
 	SetKeyboardHook installHook = NULL;

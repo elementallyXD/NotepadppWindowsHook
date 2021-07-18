@@ -10,8 +10,10 @@ KeyboardHook::KeyboardHook(const std::wstring& dllPath, const DWORD& NotepadProc
 	}
 	else 
 	{
-		if (!LoadDll())
+		if (!LoadDll()) 
+		{
 			throw std::runtime_error("Error: Unable to load library!");
+		}
 
 		if (!SetHook())
 		{
@@ -35,8 +37,8 @@ BOOL KeyboardHook::LoadDll()
 
 	if (m_hHookDLL)
 	{
-		(FARPROC&)installHook = GetProcAddress(m_hHookDLL, "SetKeyboardHook");
-		(FARPROC&)uninstallHook = GetProcAddress(m_hHookDLL, "UnhookKeyboardHook");
+		reinterpret_cast<FARPROC&>(installHook) = GetProcAddress(m_hHookDLL, "SetKeyboardHook");
+		reinterpret_cast<FARPROC&>(uninstallHook) = GetProcAddress(m_hHookDLL, "UnhookKeyboardHook");
 
 		if (!installHook || !uninstallHook)
 		{
@@ -49,22 +51,23 @@ BOOL KeyboardHook::LoadDll()
 	return FALSE;
 }
 
-BOOL KeyboardHook::SetHook()
+inline BOOL KeyboardHook::SetHook()
 {
-	if (installHook)
-	{
-		return installHook(m_id);
-	}
-	return FALSE;
+	return installHook ? installHook(m_id) : FALSE;
 }
 
 VOID KeyboardHook::Unhook()
 {
-	if (uninstallHook)
+	if (uninstallHook) 
+	{
 		uninstallHook();
+	}
 
 	installHook = NULL;
 	uninstallHook = NULL;
 	FreeLibrary(m_hHookDLL);
 	m_hHookDLL = NULL;
+
+	m_dll = L"\0";
+	m_id = 0;
 }

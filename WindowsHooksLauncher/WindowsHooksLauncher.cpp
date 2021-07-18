@@ -3,21 +3,13 @@
 
 int main(void)
 {
-	const std::wstring    process = L"notepad++.exe";
-	const std::wstring    dllName = L"Notepad++Hook.dll";
-	MSG				 	  msg;
-	BOOL				  bRet = -1;
-	DWORD				  threadID = 0;
+	DWORD threadID = 0;
 
 	try
 	{
+		const std::wstring process = L"notepad++.exe";
 		std::wcout << "Searching " << process << " process..." << std::endl;
-
 		ProcessSearch(process, &threadID);
-		if (threadID <= 0)
-		{
-			throw std::runtime_error("Thread id not found!");
-		}
 	}
 	catch (const std::exception& exception)
 	{
@@ -26,9 +18,12 @@ int main(void)
 	
 	try
 	{
-		KeyboardHook hook(dllName, threadID);
-
-		while ((bRet = GetMessage(&msg, g_HWND, WM_INPUT, WM_INPUT)) != 0)
+		const std::wstring dllName = L"Notepad++Hook.dll";
+		const std::unique_ptr<KeyboardHook> hook = std::make_unique<KeyboardHook>(dllName, threadID);
+		BOOL bRet = -1;
+		MSG	 msg;
+		
+		while ((bRet = GetMessage(&msg, g_processTools_HWND, WM_INPUT, WM_INPUT)) != 0)
 		{
 			if (bRet == -1)
 			{
